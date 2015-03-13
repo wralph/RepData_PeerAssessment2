@@ -1,0 +1,59 @@
+---
+title: "NOAA Storm Data Analysis"
+author: "Ralph Waldenmaier"
+date: "Friday, March 13, 2015"
+output: html_document
+---
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+.Language: Your document should be written in English.
+
+.Title: Your document should have a title that briefly summarizes your data analysis
+
+.Synopsis: Immediately after the title, there should be a synopsis which describes and summarizes your analysis in at most 10 complete sentences.
+
+.There should be a section titled Data Processing which describes (in words and code) how the data were loaded into R and processed for analysis. In particular, your analysis must start from the raw CSV file containing the data. You cannot do any preprocessing outside the document. If preprocessing is time-consuming you may consider using the cache = TRUE option for certain code chunks.
+
+.There should be a section titled Results in which your results are presented.
+
+.You may have other sections in your analysis, but Data Processing and Results are required.
+
+.The analysis document must have at least one figure containing a plot.
+
+.Your analyis must have no more than three figures. Figures may have multiple plots in them (i.e. panel plots), but there cannot be more than three figures total.
+
+.You must show all your code for the work in your analysis document. This may make the document a bit verbose, but that is okay. In general, you should ensure that echo = TRUE for every code chunk (this is the default setting in knitr).
+
+# Title
+
+# Synopsis
+
+# Data Processing
+
+```{r Data Processing, cache=TRUE }
+library(dplyr, quietly = TRUE, warn.conflicts = FALSE)
+library(ggplot2)
+library(scales)
+library(lubridate)
+
+zipfile <- "repdata_data_StormData.csv.bz2"
+if(!file.exists(zipfile)) 
+{
+  print("error: file does not exist")
+}
+data <- tbl_df(read.csv(bzfile(zipfile),
+                          stringsAsFactors=FALSE, 
+                          header=TRUE
+                        )
+               )
+rm(zipfile)
+```
+
+```{r}
+str(data)
+```
+# Results
