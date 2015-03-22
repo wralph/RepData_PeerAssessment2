@@ -69,70 +69,69 @@ cleanData <- data %>%
               mutate(EVTYPE=tolower(EVTYPE))
 ```
 
-Second, the EVTYPE needs to be unified. Here, several processing s based on the document [here](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf) are executed.
+Second some defaults are cleaned like whitespace, dots and empty values.
 ```{r Cleaning 2 ,cache=TRUE}
 cleanData <- cleanData %>%
               mutate(EVTYPE=gsub("[[:punct:]]", "", EVTYPE)) %>%
               mutate(EVTYPE=gsub("^\\s+", "", EVTYPE)) %>% # removing whitespace in the beginning
               mutate(EVTYPE=gsub("\\s+&", "", EVTYPE)) %>% # removing whitespace in the end
-              filter(nchar(EVTYPE) > 0) %>% # removing empty events
-              mutate(EVTYPE=gsub("astron", "AstronomicalLowTide", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("aval", "Avalanche", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("bliz", "Blizzard", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("(beach|coast).*flood", "CoastalFlood", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("^(?!.*extreme.*)(?=.*(cold|wind).*chill).*$", "ColdWindChill", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("debris", "DebrisFlow", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("^dense fog", "DenseFog", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("^dense smoke", "DenseSmoke", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("drought", "Drought", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("^(?!.*waterspout.*)(?=.*dust dev).*$", "DustDevil", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("dust.*storm", "DustStorm", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("excess.*heat", "ExcessiveHeat", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("extreme.*(cold|wind)", "ExtremeColdWindChill", EVTYPE, perl=TRUE)) %>%
-              #mutate(EVTYPE=gsub("flash.*flood.*", "FlashFlood", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("^(?!.*flash.*)(?=.*flood.*|fld.*).*$", "Flood", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("frost|freeze", "FrostFreeze", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("^(?!.*waterspout.*)(?=.*funnel).*$", "FunnelCloud", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("freez.*fog", "FreezingFog", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("^(?!.*marine.*)(?=.*hail).*$", "Hail", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("^(?!.*excessive.*)(?=.*heat).*$", "Heat", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("heavy.*rain", "HeavyRain", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("heavy.*snow", "HeavySnow", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("high.*surf", "HighSurf", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("^(?!.*marine.*)(?=.*high.*wind).*$", "HighWind", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("hurric|typhoon", "HurricaneTyphoon", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("ice.*storm", "IceStorm", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("lake.*effect.*snow", "LakeEffectSnow", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("shore.*flood", "LakeshoreFlood", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("lightning|lighting", "Lightning", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("marine hail", "MarineHail", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("marine high wind", "MarineHighWind", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("marine strong wind", "MarineStrongWind", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("marine.*(thunder|tstm)", "MarineThunderstormWind", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("rip.*current", "RipCurrent", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("seiche", "Seiche", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("sleet", "Sleet", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("storm.*(surge|tide)", "StormSurgeTide", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("^(?!.*marine.*)(?=.*strong.*wind).*$", "StrongWind", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("^(?!.*marine|non tstm|non-tstm.*)(?=.*(tstm|thunde|tunder).*(wind|wins)).*$", "ThunderstormWind", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("^(?!.*waterspout.*)(?=.*torn).*$", "Tornado", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("trop.*depr", "TropicalDepression", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("trop.*storm", "TropicalStorm", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("tsunami", "Tsunami", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("volc", "VolcanicAsh", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("(water|wayter).*spout", "Waterspout", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("wild.*fire", "Wildfire", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("winter.*storm", "WinterStorm", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("winter.*weather", "WinterWeather", EVTYPE, perl=TRUE)) %>%
-              mutate(EVTYPE=gsub("HurricaneTyphoon.*", "HurricaneTyphoon", EVTYPE, perl=TRUE))            
-              
+              filter(nchar(EVTYPE) > 0) # removing empty events
+```
+
+Third, the EVTYPE needs to be unified. Here, several processing s based on the document [here](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf) are executed.
+```{r Cleaning 3 ,cache=TRUE}
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("astron", EVTYPE, perl=TRUE), "AstronomicalLowTide", EVTYPE) ) 
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("aval", EVTYPE, perl=TRUE), "Avalanche", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("bliz", EVTYPE, perl=TRUE), "Blizzard", EVTYPE)) 
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("(beach|coast).*flood", EVTYPE, perl=TRUE), "CoastalFlood", EVTYPE)) 
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("^(?!.*extreme.*)(?=.*(cold|wind).*chill).*$", EVTYPE, perl=TRUE), "ColdWindChill", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("debris", EVTYPE, perl=TRUE), "DebrisFlow", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("^dense fog", EVTYPE, perl=TRUE), "DenseFog", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("^dense smoke", EVTYPE, perl=TRUE), "DenseSmoke", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("drought", EVTYPE, perl=TRUE), "Drought", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("^(?!.*waterspout.*)(?=.*dust dev).*$", EVTYPE, perl=TRUE), "DustDevil", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("dust.*storm", EVTYPE, perl=TRUE), "DustStorm", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("excess.*heat", EVTYPE, perl=TRUE), "ExcessiveHeat", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("extreme.*(cold|wind)", EVTYPE, perl=TRUE), "ExtremeColdWindChill", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("flash.*flood.*", EVTYPE, perl=TRUE), "FlashFlood", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("^(?!.*flash.*)(?=.*flood.*|fld.*).*$", EVTYPE, perl=TRUE), "Flood", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("frost|freeze", EVTYPE, perl=TRUE), "FrostFreeze", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("^(?!.*waterspout.*)(?=.*funnel).*$", EVTYPE, perl=TRUE), "FunnelCloud", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("freez.*fog", EVTYPE, perl=TRUE), "FreezingFog", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("^(?!.*marine.*)(?=.*hail).*$", EVTYPE, perl=TRUE), "Hail", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("^(?!.*excessive.*)(?=.*heat).*$", EVTYPE, perl=TRUE), "Heat", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("heavy.*rain", EVTYPE, perl=TRUE), "HeavyRain", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("heavy.*snow", EVTYPE, perl=TRUE), "HeavySnow", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("high.*surf", EVTYPE, perl=TRUE), "HighSurf", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("^(?!.*marine.*)(?=.*high.*wind).*$", EVTYPE, perl=TRUE), "HighWind", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("hurric|typhoon", EVTYPE, perl=TRUE), "HurricaneTyphoon", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("ice.*storm", EVTYPE, perl=TRUE), "IceStorm", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("lake.*effect.*snow", EVTYPE, perl=TRUE), "LakeEffectSnow", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("shore.*flood", EVTYPE, perl=TRUE), "LakeshoreFlood", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("lightning|lighting", EVTYPE, perl=TRUE), "Lightning", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("marine hail", EVTYPE, perl=TRUE), "MarineHail", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("marine high wind", EVTYPE, perl=TRUE), "MarineHighWind", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("marine strong wind", EVTYPE, perl=TRUE), "MarineStrongWind", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("marine.*(thunder|tstm)", EVTYPE, perl=TRUE), "MarineThunderstormWind", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("rip.*current", EVTYPE, perl=TRUE), "RipCurrent", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("seiche", EVTYPE, perl=TRUE), "Seiche", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("sleet", EVTYPE, perl=TRUE), "Sleet", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("storm.*(surge|tide)", EVTYPE, perl=TRUE), "StormSurgeTide", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("^(?!.*marine.*)(?=.*strong.*wind).*$", EVTYPE, perl=TRUE), "StrongWind", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("^(?!.*marine|non tstm|non-tstm.*)(?=.*(tstm|thunde|tunder).*(wind|wins)).*$", EVTYPE, perl=TRUE), "ThunderstormWind", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("^(?!.*waterspout.*)(?=.*torn).*$", EVTYPE, perl=TRUE), "Tornado", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("trop.*depr", EVTYPE, perl=TRUE), "TropicalDepression", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("trop.*storm", EVTYPE, perl=TRUE), "TropicalStorm", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("tsunami", EVTYPE, perl=TRUE), "Tsunami", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("volc", EVTYPE, perl=TRUE), "VolcanicAsh", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("(water|wayter).*spout", EVTYPE, perl=TRUE), "Waterspout", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("wild.*fire", EVTYPE, perl=TRUE), "Wildfire", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("winter.*storm", EVTYPE, perl=TRUE), "WinterStorm", EVTYPE))
+cleanData <- cleanData %>% mutate(EVTYPE=ifelse(grepl("winter.*weather", EVTYPE, perl=TRUE), "WinterWeather", EVTYPE))              
 ```
 
 Besides the EVTYPE (event type), the calculation values (PROPDMG[Property damage] and CROPDMG[Crop damage]) need to be cleaned. Within the variables (PROPDMGEXP and CROPDMGEXP) are the respective multipliers encoded which need to be translated and applied to (PROPDMG and CROPDMG) variables.
-```{r Cleaning 3, cache=TRUE}
-#x <- cleanData %>% select(EVTYPE) %>% distinct() # remove this after debugging
-#x
-
+```{r Cleaning 4, cache=TRUE}
 # Cleaning property damage data
 cleanData <- cleanData %>% mutate(PROPDMG=ifelse(PROPDMGEXP=="0", PROPDMG * 1, PROPDMG))
 cleanData <- cleanData %>% mutate(PROPDMG=ifelse(PROPDMGEXP=="1", PROPDMG * 10, PROPDMG))
