@@ -1,45 +1,51 @@
 ---
-title: "NOAA Storm Data Analysis"
+title: "Analysis of severe weather events impacting population health and the economy in the U.S."
 author: "Ralph Waldenmaier"
-date: "Friday, March 13, 2015"
+date: "Sunday, March 22, 2015"
 output: html_document
 ---
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-
-.Language: Your document should be written in English.
-
-.Title: Your document should have a title that briefly summarizes your data analysis
-
-.Synopsis: Immediately after the title, there should be a synopsis which describes and summarizes your analysis in at most 10 complete sentences.
-
-.There should be a section titled Data Processing which describes (in words and code) how the data were loaded into R and processed for analysis. In particular, your analysis must start from the raw CSV file containing the data. You cannot do any preprocessing outside the document. If preprocessing is time-consuming you may consider using the cache = TRUE option for certain code chunks.
-
-.There should be a section titled Results in which your results are presented.
-
-.You may have other sections in your analysis, but Data Processing and Results are required.
-
-.The analysis document must have at least one figure containing a plot.
-
-.Your analyis must have no more than three figures. Figures may have multiple plots in them (i.e. panel plots), but there cannot be more than three figures total.
-
-.You must show all your code for the work in your analysis document. This may make the document a bit verbose, but that is okay. In general, you should ensure that echo = TRUE for every code chunk (this is the default setting in knitr).
-
-# Title
-
 # Synopsis
+
+The U.S. National Oceanic and Atmospheric Administration (NOAA) collects data about storms and weather-related events from around the country on a near-daily basis. This includes the number of fatalities and injuries, along with amount of property damage and crop damage. 
+This report analyzes the data to determine the types of events that are most harmful with respect to population health, and which types of events have the greatest economic consequences. The analisys shows that tornadoes cause the largest number of injuries and death, while floods are responsible for the largest total economic cost.
 
 # Data Processing
 
-```{r Data Processing, cache=TRUE }
+Here is brief overview about the data processing in this analysis
+
+1. Downloading the NOAA data using a link provided with the Coursera assessment.
+2. Loading the data to memory using the read.csv and bzip2 functions
+3. Cleaning the data set to remove unnecessary duplicates for instance due to typos
+4. Cleaning the data sets calculation values
+5. Preparing result sets for the graph generation
+6. Graph generation to address the required questions.
+
+```{r}
+knitr::opts_chunk$set(cache=TRUE, echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+First of all the required libraries for this analysis are loaded.
+```{r Load libraries, cache=TRUE }
 library(dplyr, quietly = TRUE, warn.conflicts = FALSE)
 library(ggplot2)
 library(scales)
 library(lubridate)
+```
 
+The data provided by Coursera is obtained and stored on disk.
+```{r Obtain NOAA sotrm data, cache=TRUE}
+stormUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+
+if(!file.exists("repdata_data_StormData.csv.bz2")) 
+{
+  download.file(stormUrl, destfile = "repdata_data_StormData.csv.bz2")  
+}
+```
+
+In order to save some disk space, the data is directly extracted from the bzip2 file and loaded to memory using the read.csv function.
+
+```{r Data Processing, cache=TRUE }
 zipfile <- "repdata_data_StormData.csv.bz2"
 if(!file.exists(zipfile)) 
 {
@@ -53,7 +59,176 @@ data <- tbl_df(read.csv(bzfile(zipfile),
 rm(zipfile)
 ```
 
-```{r}
-str(data)
+## Preliminary Data Cleaning
+
+The data is cleaned in several steps.
+First of all, the values that do not provide any values(zeroes) are filtered out from the original data set. Additionally for the events cleanup, the EVTYPE is unified using tolower producing lowercase letters.
+```{r Cleaning 1 ,cache=TRUE}
+cleanData <- data %>% 
+              filter(FATALITIES > 0 | INJURIES > 0 | PROPDMG > 0 | CROPDMG > 0) %>%
+              mutate(EVTYPE=tolower(EVTYPE))
 ```
+
+Second, the EVTYPE needs to be unified. Here, several processing s based on the document [here](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf) are executed.
+```{r Cleaning 2 ,cache=TRUE}
+cleanData <- cleanData %>%
+              mutate(EVTYPE=gsub("[[:punct:]]", "", EVTYPE)) %>%
+              mutate(EVTYPE=gsub("^\\s+", "", EVTYPE)) %>% # removing whitespace in the beginning
+              mutate(EVTYPE=gsub("\\s+&", "", EVTYPE)) %>% # removing whitespace in the end
+              filter(nchar(EVTYPE) > 0) %>% # removing empty events
+              mutate(EVTYPE=gsub("astron", "AstronomicalLowTide", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("aval", "Avalanche", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("bliz", "Blizzard", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("(beach|coast).*flood", "CoastalFlood", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("^(?!.*extreme.*)(?=.*(cold|wind).*chill).*$", "ColdWindChill", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("debris", "DebrisFlow", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("^dense fog", "DenseFog", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("^dense smoke", "DenseSmoke", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("drought", "Drought", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("^(?!.*waterspout.*)(?=.*dust dev).*$", "DustDevil", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("dust.*storm", "DustStorm", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("excess.*heat", "ExcessiveHeat", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("extreme.*(cold|wind)", "ExtremeColdWindChill", EVTYPE, perl=TRUE)) %>%
+              #mutate(EVTYPE=gsub("flash.*flood.*", "FlashFlood", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("^(?!.*flash.*)(?=.*flood.*|fld.*).*$", "Flood", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("frost|freeze", "FrostFreeze", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("^(?!.*waterspout.*)(?=.*funnel).*$", "FunnelCloud", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("freez.*fog", "FreezingFog", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("^(?!.*marine.*)(?=.*hail).*$", "Hail", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("^(?!.*excessive.*)(?=.*heat).*$", "Heat", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("heavy.*rain", "HeavyRain", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("heavy.*snow", "HeavySnow", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("high.*surf", "HighSurf", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("^(?!.*marine.*)(?=.*high.*wind).*$", "HighWind", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("hurric|typhoon", "HurricaneTyphoon", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("ice.*storm", "IceStorm", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("lake.*effect.*snow", "LakeEffectSnow", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("shore.*flood", "LakeshoreFlood", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("lightning|lighting", "Lightning", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("marine hail", "MarineHail", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("marine high wind", "MarineHighWind", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("marine strong wind", "MarineStrongWind", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("marine.*(thunder|tstm)", "MarineThunderstormWind", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("rip.*current", "RipCurrent", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("seiche", "Seiche", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("sleet", "Sleet", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("storm.*(surge|tide)", "StormSurgeTide", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("^(?!.*marine.*)(?=.*strong.*wind).*$", "StrongWind", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("^(?!.*marine|non tstm|non-tstm.*)(?=.*(tstm|thunde|tunder).*(wind|wins)).*$", "ThunderstormWind", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("^(?!.*waterspout.*)(?=.*torn).*$", "Tornado", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("trop.*depr", "TropicalDepression", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("trop.*storm", "TropicalStorm", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("tsunami", "Tsunami", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("volc", "VolcanicAsh", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("(water|wayter).*spout", "Waterspout", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("wild.*fire", "Wildfire", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("winter.*storm", "WinterStorm", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("winter.*weather", "WinterWeather", EVTYPE, perl=TRUE)) %>%
+              mutate(EVTYPE=gsub("HurricaneTyphoon.*", "HurricaneTyphoon", EVTYPE, perl=TRUE))            
+              
+```
+
+Besides the EVTYPE (event type), the calculation values (PROPDMG[Property damage] and CROPDMG[Crop damage]) need to be cleaned. Within the variables (PROPDMGEXP and CROPDMGEXP) are the respective multipliers encoded which need to be translated and applied to (PROPDMG and CROPDMG) variables.
+```{r Cleaning 3, cache=TRUE}
+#x <- cleanData %>% select(EVTYPE) %>% distinct() # remove this after debugging
+#x
+
+# Cleaning property damage data
+cleanData <- cleanData %>% mutate(PROPDMG=ifelse(PROPDMGEXP=="0", PROPDMG * 1, PROPDMG))
+cleanData <- cleanData %>% mutate(PROPDMG=ifelse(PROPDMGEXP=="1", PROPDMG * 10, PROPDMG))
+cleanData <- cleanData %>% mutate(PROPDMG=ifelse(PROPDMGEXP=="2", PROPDMG * 100, PROPDMG))
+cleanData <- cleanData %>% mutate(PROPDMG=ifelse(PROPDMGEXP=="3", PROPDMG * 1000, PROPDMG))
+cleanData <- cleanData %>% mutate(PROPDMG=ifelse(PROPDMGEXP=="4", PROPDMG * 10000, PROPDMG))
+cleanData <- cleanData %>% mutate(PROPDMG=ifelse(PROPDMGEXP=="5", PROPDMG * 100000, PROPDMG))
+cleanData <- cleanData %>% mutate(PROPDMG=ifelse(PROPDMGEXP=="6", PROPDMG * 1000000, PROPDMG))
+cleanData <- cleanData %>% mutate(PROPDMG=ifelse(PROPDMGEXP=="7", PROPDMG * 10000000, PROPDMG))
+cleanData <- cleanData %>% mutate(PROPDMG=ifelse(PROPDMGEXP=="8", PROPDMG * 100000000, PROPDMG))
+cleanData <- cleanData %>% mutate(PROPDMG=ifelse(PROPDMGEXP=="B", PROPDMG * 1000000000, PROPDMG))
+cleanData <- cleanData %>% mutate(PROPDMG=ifelse(PROPDMGEXP=="b", PROPDMG * 1000000000, PROPDMG))
+cleanData <- cleanData %>% mutate(PROPDMG=ifelse(PROPDMGEXP=="H", PROPDMG * 100, PROPDMG))
+cleanData <- cleanData %>% mutate(PROPDMG=ifelse(PROPDMGEXP=="h", PROPDMG * 100, PROPDMG))
+cleanData <- cleanData %>% mutate(PROPDMG=ifelse(PROPDMGEXP=="K", PROPDMG * 1000, PROPDMG))
+cleanData <- cleanData %>% mutate(PROPDMG=ifelse(PROPDMGEXP=="k", PROPDMG * 1000, PROPDMG))  
+cleanData <- cleanData %>% mutate(PROPDMG=ifelse(PROPDMGEXP=="M", PROPDMG * 1000000, PROPDMG))  
+cleanData <- cleanData %>% mutate(PROPDMG=ifelse(PROPDMGEXP=="m", PROPDMG * 1000000, PROPDMG))  
+
+# Cleaning crop damage data
+cleanData <- cleanData %>% mutate(CROPDMG=ifelse(CROPDMGEXP=="0", CROPDMG * 1, CROPDMG))
+cleanData <- cleanData %>% mutate(CROPDMG=ifelse(CROPDMGEXP=="1", CROPDMG * 10, CROPDMG))
+cleanData <- cleanData %>% mutate(CROPDMG=ifelse(CROPDMGEXP=="2", CROPDMG * 100, CROPDMG))
+cleanData <- cleanData %>% mutate(CROPDMG=ifelse(CROPDMGEXP=="3", CROPDMG * 1000, CROPDMG))
+cleanData <- cleanData %>% mutate(CROPDMG=ifelse(CROPDMGEXP=="4", CROPDMG * 10000, CROPDMG))
+cleanData <- cleanData %>% mutate(CROPDMG=ifelse(CROPDMGEXP=="5", CROPDMG * 100000, CROPDMG))
+cleanData <- cleanData %>% mutate(CROPDMG=ifelse(CROPDMGEXP=="6", CROPDMG * 1000000, CROPDMG))
+cleanData <- cleanData %>% mutate(CROPDMG=ifelse(CROPDMGEXP=="7", CROPDMG * 10000000, CROPDMG))
+cleanData <- cleanData %>% mutate(CROPDMG=ifelse(CROPDMGEXP=="8", CROPDMG * 100000000, CROPDMG))
+cleanData <- cleanData %>% mutate(CROPDMG=ifelse(CROPDMGEXP=="B", CROPDMG * 1000000000, CROPDMG))
+cleanData <- cleanData %>% mutate(CROPDMG=ifelse(CROPDMGEXP=="b", CROPDMG * 1000000000, CROPDMG))
+cleanData <- cleanData %>% mutate(CROPDMG=ifelse(CROPDMGEXP=="H", CROPDMG * 100, CROPDMG))
+cleanData <- cleanData %>% mutate(CROPDMG=ifelse(CROPDMGEXP=="h", CROPDMG * 100, CROPDMG))
+cleanData <- cleanData %>% mutate(CROPDMG=ifelse(CROPDMGEXP=="K", CROPDMG * 1000, CROPDMG))
+cleanData <- cleanData %>% mutate(CROPDMG=ifelse(CROPDMGEXP=="k", CROPDMG * 1000, CROPDMG))  
+cleanData <- cleanData %>% mutate(CROPDMG=ifelse(CROPDMGEXP=="M", CROPDMG * 1000000, CROPDMG))  
+cleanData <- cleanData %>% mutate(CROPDMG=ifelse(CROPDMGEXP=="m", CROPDMG * 1000000, CROPDMG))  
+
+```
+
 # Results
+
+## Result data processing
+Using the previously cleaned data, the result sets for the needed graphs can be generated.
+
+First the data for the causalities is calculated. Therefore the data is grouped by EVTYPE and the values for INJURIES and FATALITIES are summed. After adding INJURIES and FATALITIES, a new variable impact is generated per EVTYPE. To provide only the most interesting values to the result, only the 15 records with the highest impact are chosen.
+
+```{r Resultset generation causalities, cache=TRUE}
+causalities <- cleanData %>% 
+                group_by(EVTYPE) %>% 
+                summarize(inj=sum(INJURIES), fat=sum(FATALITIES)) %>% 
+                mutate(impact=inj+fat) %>% 
+                arrange(desc(impact)) %>%
+                top_n(15, impact)
+```
+
+
+The same calculation as previously must be generated for the economic impact as well. For this, the values for COPRDMG and PROPDMG, which were cleaned in the previous steps, are now summarized after grouping them by EVTYPE. Also here an impact is generated, though divided by one million in order to have more readable values in the charts using the grid. Also here only the 15 records with the highest impact are chosen.
+
+```{r Resultset generation economic, cache=TRUE}
+economic <- cleanData %>% 
+                group_by(EVTYPE) %>% 
+                summarize(crp=sum(CROPDMG), prp=sum(PROPDMG)) %>% 
+                mutate(impact=(crp+prp)/1000000) %>% 
+                arrange(desc(impact)) %>%
+                top_n(15, impact)
+```
+
+## Graphs
+
+## Answering question 1
+
+The most harmful event with respect to population health are the **tornadoes**
+
+```{r Generating graph causalities, cache=TRUE}
+ggplot(causalities, aes(x=reorder(EVTYPE,impact), y=impact)) +
+        geom_bar(stat="identity") +
+        xlab("Event type") +
+        ylab("# of victims") +
+        coord_flip() +
+        ggtitle("Most harmful events with respect to population health")
+```
+
+## Answering question 2
+
+The event with the greatest economic consequences is the **flood**
+
+```{r Generating graph economic, cache=TRUE}
+ggplot(economic, aes(x=reorder(EVTYPE,impact), y=impact)) +
+        geom_bar(stat="identity") +
+        xlab("Event type") +
+        ylab("Costs in millions") +
+        coord_flip() +
+        ggtitle("Economic consequences by event type") +
+        scale_y_continuous(labels = comma) +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
